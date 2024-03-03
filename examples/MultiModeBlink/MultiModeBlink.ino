@@ -1,32 +1,33 @@
-#include <FlexBlink.h>
+#include "FlexBlink.h"
 
-int ledPins[] = {2, 3, 4}; // Define LED pins
-FlexBlink ledControl(ledPins, 3);
-
-const int buttonPin = 5; // Define button pin
-int lastButtonState = LOW;
-int currentMode = 0;
+constexpr int NUM_LEDS = 3;
+constexpr int NUM_MODES = 2;
+int ledPins[NUM_LEDS] = {2, 3, 4};
+FlexBlink<NUM_LEDS, NUM_MODES> ledController(ledPins);
 
 void setup() {
-    pinMode(buttonPin, INPUT_PULLUP); // Set the button as an input
+    // Mode 0: LED 1 and 3 blink
+    bool mode0States[NUM_LEDS] = {true, false, true};
+    ledController.setupMode(0, 1000, 1000, mode0States);
 
-    // Setup modes
-    ledControl.setupMode(0, 500, 500, ledPins, 3); // Mode 0: All LEDs blink at 500ms intervals
-    ledControl.setupMode(1, 200, 800, ledPins, 3); // Mode 1: All LEDs blink at different intervals
+    // Mode 1: Only LED 2 blinks
+    bool mode1States[NUM_LEDS] = {false, true, false};
+    ledController.setupMode(1, 500, 500, mode1States);
+
+    // Start with mode 0
+    ledController.changeMode(0);
 }
 
 void loop() {
-    // Update LEDs
-    ledControl.update();
+    ledController.update();
 
-    // Read the state of the button
-    int buttonState = digitalRead(buttonPin);
-
-    // Check if the button is pressed
-    if (buttonState == LOW && lastButtonState == HIGH) {
-        currentMode = (currentMode + 1) % 2; // Change the mode
-        ledControl.changeMode(currentMode);
+    // Example to change mode based on some condition, e.g., every 10 seconds
+    static unsigned long lastChangeMillis = 0;
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastChangeMillis > 10000) {
+        static int currentMode = 0;
+        currentMode = (currentMode + 1) % NUM_MODES; // Cycle through modes
+        ledController.changeMode(currentMode);
+        lastChangeMillis = currentMillis;
     }
-
-    lastButtonState = buttonState; // Save the current state as the last state, for next time through the loop
 }
